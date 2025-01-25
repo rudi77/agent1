@@ -7,33 +7,42 @@ import logging
 logger = logging.getLogger(__name__)
 
 class CreateDirectoriesTool(BaseTool):
-    name = "create_directories"
-    description = "Create directory structure based on template. Args format: 'base_path::dir1,dir2,dir3'"
+    name: str = "create_directory"
+    description: str = "Create a single directory at the specified path, including any necessary parent directories"
     
-    def _run(self, args: str) -> str:
-        """Create directories from a comma-separated list"""
+    def _run(self, directory_path: str) -> str:
+        """Create a single directory and its parent directories if needed"""
         try:
-            base_path, dir_list = args.split("::")
-            directories = [d.strip() for d in dir_list.split(",")]
-            
-            base = Path(base_path)
-            for dir_path in directories:
-                (base / dir_path).mkdir(parents=True, exist_ok=True)
-            return f"Successfully created directory structure at {base_path}"
+            Path(directory_path).mkdir(parents=True, exist_ok=True)
+            return f"Successfully created directory: {directory_path}"
         except Exception as e:
-            logger.error(f"Failed to create directories: {str(e)}")
-            return f"Failed to create directories: {str(e)}"
+            logger.error(f"Failed to create directory: {str(e)}")
+            return f"Failed to create directory: {str(e)}"
     
-    async def _arun(self, args: str) -> str:
-        return self._run(args)
+    async def _arun(self, directory_path: str) -> str:
+        return self._run(directory_path)
 
 class WriteFileTool(BaseTool):
-    name = "write_file"
-    description = "Write content to a file, creating parent directories if needed. Args format: 'file_path::content'"
+    name: str = "write_file"
+    description: str = "Write content to a file, creating parent directories if needed. Args format: 'file_path::content'"
     
-    def _run(self, args: str) -> str:
+    def _run(self, args: str | dict) -> str:
         try:
-            file_path, content = args.split("::", 1)  # Split on first occurrence only
+            # Extract file path and content based on input format
+            if isinstance(args, dict):
+                if 'v__args' in args:
+                    # Format: {'v__args': [file_path, content]}
+                    file_path, content = args['v__args']
+                elif 'file_path' in args and 'content' in args:
+                    # Format: {'file_path': path, 'content': content}
+                    file_path = args['file_path']
+                    content = args['content']
+                else:
+                    raise ValueError(f"Invalid argument format: {args}")
+            else:
+                # Format: "file_path::content"
+                file_path, content = args.split("::", 1)
+            
             path = Path(file_path)
             path.parent.mkdir(parents=True, exist_ok=True)
             # Write with UTF-8 encoding
@@ -43,12 +52,18 @@ class WriteFileTool(BaseTool):
             logger.error(f"Failed to write file: {str(e)}")
             return f"Failed to write file: {str(e)}"
     
-    async def _arun(self, args: str) -> str:
-        return self._run(args)
+    async def _arun(self, *args: str | dict, **kwargs: str | dict) -> str:
+        # Handle both positional and keyword arguments
+        if args and len(args) > 0:
+            return self._run(args[0])
+        elif kwargs:
+            # If we receive kwargs directly, pass them as a dict
+            return self._run(kwargs)
+        return "No arguments provided"
 
 class LoadTemplateTool(BaseTool):
-    name = "load_template"
-    description = "Load project template for the specified language"
+    name: str = "load_template"
+    description: str = "Load project template for the specified language"
     templates_dir: str = "templates"  # Default templates directory
     
     def __init__(self, templates_dir: str = "templates", **kwargs):

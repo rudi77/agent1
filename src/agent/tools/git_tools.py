@@ -7,8 +7,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 class InitRepoTool(BaseTool):
-    name = "init_repository"
-    description = "Initialize a new Git repository at the specified path"
+    name: str = "init_repository"
+    description: str = "Initialize a new Git repository at the specified path"
     
     def _run(self, path: str) -> str:
         try:
