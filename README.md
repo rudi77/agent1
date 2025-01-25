@@ -39,6 +39,45 @@ Create a `.env` file in the root directory with:
 OPENAI_API_KEY=your_api_key_here
 ```
 
+## Installation with uv
+
+[uv](https://github.com/astral-sh/uv) is a fast Python package installer and resolver, written in Rust. Here's how to set up the project using uv:
+
+1. Install uv if you haven't already:
+```bash
+pip install uv
+```
+
+2. Create and activate a virtual environment:
+```bash
+uv venv
+# On Windows:
+.venv\Scripts\activate
+# On Unix-like systems:
+source .venv/bin/activate
+```
+
+3. Install dependencies using uv:
+```bash
+# Install from requirements.txt
+uv pip install -r requirements.txt
+
+# Or install from pyproject.toml
+uv pip install .
+```
+
+4. For development installations (including dev dependencies):
+```bash
+uv pip install -e ".[dev]"
+```
+
+5. To update dependencies to their latest compatible versions:
+```bash
+uv pip compile requirements.txt --upgrade
+```
+
+6. Set up environment variables as described in the standard installation section.
+
 ## Usage
 
 Here's a basic example of using the agent to create a new repository:
