@@ -1,0 +1,257 @@
+# Save this file with UTF-8 encoding
+Below is an adapted project template description for Python-based projects, preserving the core ideas of Hexagonal Architecture and Clean Code/Clean Architecture principles from the original C# version.
+
+---
+
+# Introduction
+
+This **Python Service Template** provides a structured approach to building Python services with a focus on maintainability, testability, and scalability. It follows the Hexagonal Architecture (Ports and Adapters) pattern and incorporates Clean Code principles.
+
+# Getting Started
+
+1. **Configure Your Project Settings**  
+   - Modify your `pyproject.toml`, `setup.py`, or `requirements.txt` (depending on your setup) to match the dependencies and project metadata you require.  
+   - If you are using Azure Pipelines, adapt the provided `azure-pipelines.yml` file (or script) to replace any placeholders with your project-specific values (e.g., repository names, environment variables, or resource group names).
+
+2. **Install Dependencies**  
+   - Create and activate a virtual environment (if desired) and install dependencies:
+     ```bash
+     python -m venv venv
+     source venv/bin/activate   # or .\venv\Scripts\activate on Windows
+
+     pip install -r requirements.txt
+     ```
+   - If you have a private PyPI feed, configure your `pip` or `poetry` settings to use it for internal packages.
+
+3. **Build and Publish Internal Libraries (If Applicable)**  
+   - If you have internal Python libraries (similar to a `.Client` and `.Interface` pattern in C#), make sure to build or package them, then push them to your internal PyPI feed before referencing them in other parts of the project.  
+   - A typical workflow (with Poetry) might be:
+     ```bash
+     cd my_internal_library
+     poetry build
+     poetry publish --username <user> --password <pass> <your-private-feed>
+     ```
+
+4. **Run Tests**  
+   - This template assumes **pytest** for testing, though you can adapt to any testing framework.  
+   - You can create separate integration tests that act similarly to the `.Client.Tests` in the C# template. For example, a `tests/integration` folder can use the internal client library to test your API endpoints.
+     ```bash
+     pytest tests
+     ```
+
+5. **Local Deployment (Optional)**  
+   - If you plan to run your service locally on Kubernetes (e.g., via Minikube or Docker Desktop), you may have deployment manifests (in a `manifests` or `k8s` directory).  
+   - Update your Kubernetes manifests as needed, then deploy with:
+     ```bash
+     kubectl apply -f k8s/
+     ```
+
+---
+
+# About This **Template**
+
+## Hexagonal Architecture in Clean Code and Clean Architecture
+
+Hexagonal Architecture (Ports and Adapters) emphasizes a clean separation between:
+1. **Core business logic** (the "Domain" or "Core" layer)  
+2. **External frameworks and systems** (the "Infrastructure" layer)  
+3. **Application logic** that orchestrates use cases (the "Application" layer)
+
+For more details, refer to:  
+[Hexagonal Architecture (software) - Wikipedia](https://en.wikipedia.org/wiki/Hexagonal_architecture_(software))
+
+Below is how these principles translate to a **Python** codebase.
+
+---
+
+### Hexagonal Architecture Key Concepts
+
+1. **Core (Domain Layer)**  
+   **Responsibilities**:  
+   - Encapsulates business rules and domain models.  
+   - Defines interfaces (ports) for external dependencies.  
+   - Free of any references to frameworks or infrastructure.  
+
+   **Clean Code Principle**:  
+   - **Separation of Concerns**: The domain layer deals only with business logic.  
+   - **Dependency Inversion**: The core depends only on abstractions (Python protocols or abstract base classes).
+
+2. **Application Layer**  
+   **Responsibilities**:  
+   - Acts as an entry point for external requests (e.g., API calls, CLI commands).  
+   - Orchestrates business logic by coordinating with the domain layer and external adapters.  
+
+   **Clean Code Principle**:  
+   - **Single Responsibility**: Each service or use-case function handles one task (e.g., fetching certain data or performing a computation).  
+   - **High Cohesion**: Application services are focused on specific tasks.
+
+3. **Infrastructure Layer**  
+   **Responsibilities**:  
+   - Implements external dependencies (e.g., databases, message brokers, observability).  
+   - Adapts external frameworks and tools to the core's interfaces (ports).  
+
+   **Clean Code Principle**:  
+   - **Open/Closed Principle**: Infrastructure can be extended or replaced (e.g., switching from PostgreSQL to MongoDB) without changing the core/domain.  
+   - **Low Coupling**: Infrastructure concerns are isolated from business logic.
+
+---
+
+### Hexagonal Architecture Applied to This Python Template
+
+A common Python folder layout that follows Hexagonal Architecture might look like this:
+
+```
+my_service/
+├── core/
+│   ├── entities/          # Domain models
+│   ├── interfaces/        # Abstract base classes or protocols (ports)
+│   └── services/          # Core domain services (optional)
+├── application/
+│   ├── use_cases/         # Orchestration of domain logic
+│   └── api/               # e.g., Flask or FastAPI endpoints
+├── infrastructure/
+│   ├── persistence/       # Database adapters, repositories
+│   ├── messaging/         # Message broker adapters (if needed)
+│   └── observability/     # Logging, monitoring
+└── tests/
+    ├── unit/
+    └── integration/
+```
+
+1. **Core Layer**  
+   - **Domain Models**  
+     ```python
+     from dataclasses import dataclass
+     from datetime import datetime
+
+     @dataclass
+     class JobState:
+         job_id: str
+         customer_id: str
+         current_state: str
+         last_updated: datetime
+     ```
+
+   - **Ports (Interfaces)**  
+     ```python
+     from typing import Protocol, List, Optional
+     from .entities import JobState
+
+     class JobStateRepository(Protocol):
+         async def get_running_jobs(self, customer_id: str) -> List[JobState]:
+             ...
+
+         async def get_job_state(self, customer_id: str, job_id: str) -> Optional[JobState]:
+             ...
+
+         async def save_job_state(self, job_state: JobState) -> None:
+             ...
+
+         async def delete_job_state(self, customer_id: str, job_id: str) -> bool:
+             ...
+     ```
+
+   **Clean Architecture Alignment**:  
+   - Core contains no framework or I/O code and depends only on abstract definitions.
+
+2. **Application Layer**  
+   - **Primary Adapters / Use Cases**  
+     ```python
+     from typing import List
+     from my_service.core.entities import JobState
+     from my_service.core.interfaces import JobStateRepository
+
+     class JobStateService:
+         def __init__(self, repository: JobStateRepository):
+             self._repository = repository
+
+         async def get_running_jobs(self, customer_id: str) -> List[JobState]:
+             return await self._repository.get_running_jobs(customer_id)
+     ```
+
+   **Clean Architecture Alignment**:  
+   - Contains orchestrating logic (e.g., combining domain logic and external calls).  
+   - Testable by mocking the `JobStateRepository`.
+
+3. **Infrastructure Layer**  
+   - **Secondary Adapters**: Database, messaging, external APIs, etc.  
+     ```python
+     import aiofiles
+     import json
+     from typing import List, Optional
+     from my_service.core.entities import JobState
+     from my_service.core.interfaces import JobStateRepository
+
+     class FileBasedJobStateRepository(JobStateRepository):
+         def __init__(self, base_path: str):
+             self.base_path = base_path
+
+         async def get_running_jobs(self, customer_id: str) -> List[JobState]:
+             # Example: read JSON files in a directory
+             # Return only those with a "running" status
+             ...
+     ```
+
+   **Clean Architecture Alignment**:  
+   - Actual I/O code is isolated, so switching from file-based storage to a cloud blob store or a relational DB only affects this layer.
+
+---
+
+### Applying Clean Code Principles
+
+1. **Single Responsibility**  
+   - Each Python module/class deals with only one concern (e.g., a repository for data access, an application service for orchestrating domain operations).
+
+2. **Dependency Inversion**  
+   - The application services and domain logic depend on abstract definitions (`Protocol`s in Python) rather than concrete implementations.
+
+3. **High Cohesion, Low Coupling**  
+   - Domain rules are contained in the `core` layer.  
+   - Infrastructure code is in separate modules, loosely coupled via interfaces.
+
+4. **Testability**  
+   - Mock the core interfaces in the `tests` folder to verify domain logic in isolation.  
+   - Integration tests verify actual adapters and infrastructure.
+
+---
+
+### Benefits of the Applied Architecture
+
+1. **Flexibility**: Swap out infrastructure (e.g., databases, message brokers, or logging services) by updating the infrastructure layer.  
+2. **Scalability**: Each layer can scale independently (e.g., horizontally scaling web servers without altering the domain or infrastructure logic).  
+3. **Testability**: Core domain logic is easy to test with mock repositories.  
+4. **Maintainability**: A clear separation of concerns makes the codebase more comprehensible and easier to modify.
+
+---
+
+### Example Visual Representation
+
+```
+          +-------------------------+
+          |       Core Layer        |
+          |-------------------------|
+          | Domain Models           |
+          | Business Rules          |
+          | Interfaces (Ports)      |
+          +-------------------------+
+                     ^
+                     |
+         +-----------|-----------+
+         |                       |
++-----------------+   +-----------------------+
+| Application     |   | Infrastructure        |
+| (Use Cases, API)|   | (DB Adapters,         |
+|-----------------|   |  External Services)   |
+|                 |   |                       |
++-----------------+   +-----------------------+
+```
+
+**Key Takeaways**:
+
+- Keep business rules in the Core layer, free of infrastructure or framework-specific dependencies.  
+- Implement infrastructure concerns behind clear interfaces that the application layer calls.  
+- Use the application layer to orchestrate your use cases, bridging the core logic and infrastructure.
+
+---
+
+**Enjoy building maintainable, testable, and scalable Python services with this Hexagonal Architecture-inspired template!**

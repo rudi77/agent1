@@ -1,0 +1,28 @@
+[project]
+name = "llm-repo-agent"
+version = "0.1.0"
+description = "LLM-based Git Repository Creation Agent"
+requires-python = ">=3.9"
+dependencies = [
+    "langchain>=0.1.0",
+    "langchain-community>=0.0.10",
+    "langchain-openai>=0.0.5",
+    "openai>=1.0.0",
+    "gitpython>=3.1.0",
+    "python-dotenv>=1.0.0"
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.rye]
+managed = true
+dev-dependencies = []
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"] 

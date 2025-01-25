@@ -1,0 +1,232 @@
+Below is the **updated** Product Requirements Document (PRD), now reflecting the additional requirement that the agent must autonomously generate all necessary source code and documentation in compliance with a provided project template, which may vary based on the selected programming language.
+
+---
+
+# Product Requirements Document (PRD)  
+**LLM-Based Git Repository Creation Agent** (Updated)
+
+---
+
+## 1. Overview
+
+This document outlines the requirements for an AI-powered agent capable of creating and managing Git repositories, generating documentation, and producing code in multiple languages (e.g., Python, C#). The agent should fully autonomously generate **all** necessary source code files and documentation to meet customer-defined requirements, while ensuring the project’s architecture conforms to a **provided project template** that may differ based on the selected programming language.
+
+### 1.1 Purpose
+
+The primary purpose of this agent is to **streamline the initial setup of new software projects** and **fulfill specific requirements** defined by the customer:
+
+- Create or initialize a Git repository.  
+- Generate **all** relevant project files and directories (including documentation such as `README.md`).  
+- Autonomously generate source code in Python, C#, or other supported languages based on **predefined templates** and user-provided requirements.  
+- Ensure the architecture of the project is **compliant with a provided project template** that depends on the chosen language.  
+- Commit and push these changes to a remote repository, delivering a fully functional starter project with minimal manual effort.
+
+### 1.2 Goals and Objectives
+
+- **Complete Automation**: Eliminate the need for manual file creation and setup.  
+- **Requirements Fulfillment**: Generate **all** source code needed to meet the customer’s specific requirements.  
+- **Template Compliance**: Adhere to the structure dictated by language-specific templates.  
+- **Consistency**: Enforce standard folder structures, naming conventions, and best practices.  
+- **Scalability**: Offer straightforward expansion to additional languages and advanced code-generation features.
+
+---
+
+## 2. Product Scope
+
+### 2.1 In-Scope
+
+1. **LLM Integration**  
+   - Ability to prompt a Large Language Model for generating and modifying **all** necessary files (code, documentation, etc.).  
+   - RAG (Retrieval-Augmented Generation) to retrieve relevant boilerplates or templates.
+
+2. **Git Operations**  
+   - Initialize a repository or clone existing ones locally.  
+   - Add commits and push changes to a remote (e.g., GitHub, GitLab).  
+   - Provide basic branch control.
+
+3. **File and Directory Handling**  
+   - Create directory structures and files (including documentation) **autonomously** based on user requirements.  
+   - Leverage a **provided project template** that might vary by language (Python, C#, etc.).  
+   - Write or modify individual files (e.g., `README.md`, source code files).
+
+4. **Code Generation**  
+   - Support generating source code **in full** for Python, C#, and potentially more languages.  
+   - Ensure the **architecture** of the generated project is compliant with the relevant template.  
+   - Incorporate user requirements (e.g., classes, functions, modules) into the code automatically.
+
+5. **Documentation Generation**  
+   - Produce or update a `README.md` and additional documentation as needed.  
+   - Insert references to project requirements, usage instructions, or architecture details.
+
+### 2.2 Out of Scope
+
+1. **Advanced CI/CD**  
+   - End-to-end pipeline creation (multi-stage Docker builds, complex test workflows) is not included in this initial version.  
+2. **In-depth Code Quality & Security Analysis**  
+   - Linting or security scanning can be added later, but the main focus is generation rather than analysis.  
+3. **Complex Merge and Conflict Resolution**  
+   - Advanced workflows (multi-branch merges, conflict resolution) are beyond the initial scope.
+
+---
+
+## 3. User Stories and Use Cases
+
+1. **User Story 1**  
+   - *As a developer*, I want to specify a language and repository location so that the agent **fully sets up** a new project with all necessary files and documentation following a **language-specific** template.  
+   - **Acceptance Criteria**:  
+     - Agent **autonomously** creates a Git repo with the correct folder structure.  
+     - Agent uses the appropriate template (Python, C#, etc.).  
+     - Agent commits and pushes the entire project to the remote repository.
+
+2. **User Story 2**  
+   - *As a software architect*, I want to provide a set of requirements for a microservice so that **all** essential source code (e.g., REST endpoints, data models, Dockerfiles) and documentation is generated automatically.  
+   - **Acceptance Criteria**:  
+     - The agent retrieves or applies the relevant template.  
+     - The agent produces code in the specified language to satisfy each functional requirement.  
+     - The generated project includes documentation (`README`, docstrings, etc.).
+
+3. **User Story 3**  
+   - *As a tech lead*, I need to ensure **every** new project adheres to a standardized template, so that the architecture remains consistent across different services.  
+   - **Acceptance Criteria**:  
+     - The agent strictly follows the provided project template (folder structure, naming conventions).  
+     - The agent’s code generation automatically respects the architecture guidelines in the template.  
+     - The final structure is documented and version-controlled.
+
+---
+
+## 4. Functional Requirements
+
+1. **Repository Management**  
+   - **FR1**: The system **must** initialize or clone a local Git repository for the project if one does not exist.  
+   - **FR2**: The system **must** allow adding a remote origin and pushing changes (including specific branches).  
+   - **FR3**: The system **must** support commit messages that reflect the operation or milestone.
+
+2. **Template Compliance**  
+   - **FR4**: The system **must** strictly adhere to the **provided project template**—which can be language-specific—and replicate its architecture.  
+   - **FR5**: The system **must** dynamically select the correct template based on user input (e.g., Python vs. C#).  
+   - **FR6**: The system **must** create directories and placeholder files from the chosen template, ensuring consistent naming and structure.
+
+3. **Source Code Generation**  
+   - **FR7**: The LLM **must** be able to produce **all** necessary code in Python, C#, or other specified languages to satisfy user requirements.  
+   - **FR8**: The agent **must** autonomously generate or modify multiple files (e.g., `app.py`, `Program.cs`, `Dockerfile`, etc.) without requiring manual creation.  
+   - **FR9**: The agent’s generated code **must** align with the structure and standards defined in the chosen template (e.g., naming conventions, folder layout).
+
+4. **Documentation**  
+   - **FR10**: The system **must** generate or update a `README.md` describing the project overview, setup instructions, and usage.  
+   - **FR11**: The system **should** produce additional documentation files (e.g., `docs/architecture.md`) if specified by the user or the template.  
+   - **FR12**: The system’s documentation **must** integrate references to user-provided requirements, explaining how the generated code satisfies them.
+
+5. **Validation and Logging**  
+   - **FR13**: The system **must** log each agent action (file creation, commit, push, template retrieval) for traceability.  
+   - **FR14**: The system **must** handle errors gracefully (e.g., failed Git push, invalid file paths) and report them to the user.
+
+---
+
+## 5. Non-Functional Requirements
+
+1. **Performance**  
+   - The agent should complete standard repository creation, template application, and commits within an acceptable time (e.g., under 30 seconds for typical templates).
+
+2. **Scalability**  
+   - Must allow for additional or custom templates without large architectural changes.  
+   - Support new programming languages by adding templates and minimal new code.
+
+3. **Security**  
+   - All credentials for Git and LLM providers must be stored securely (e.g., environment variables, secret management).  
+   - No tokens or keys should be exposed in logs or version control.
+
+4. **Maintainability**  
+   - Code should be modular, separating Git operations, file handling, and LLM logic.  
+   - The RAG or template store should be replaceable with minimal refactoring.
+
+5. **Usability**  
+   - The agent must accept requirements in natural language or structured format.  
+   - Command-line or API-level instructions should be intuitive (e.g., “Create a new Python microservice with endpoints X, Y, Z”).
+
+---
+
+## 6. Technical Dependencies
+
+1. **LLM Provider**  
+   - OpenAI, Azure OpenAI, or a locally hosted model capable of code generation.  
+   - Must handle sufficiently large prompts for extended templates and user requirements.
+
+2. **Version Control**  
+   - Local Git installation.  
+   - Python libraries such as `GitPython` or shell-based Git commands.
+
+3. **Agent Framework**  
+   - (Optional) LangChain, Semantic Kernel, or a custom solution that coordinates tool usage and LLM calls.
+
+4. **Template Storage (RAG)**  
+   - File-based or vector DB (e.g., Chroma, Weaviate) for storing boilerplates in a semantically searchable format.  
+   - Must support multiple templates corresponding to different programming languages.
+
+---
+
+## 7. Assumptions and Constraints
+
+1. **Assumptions**  
+   - The user has valid Git credentials to push to remote repositories.  
+   - The user has a valid LLM API key with sufficient usage quota.  
+   - The user provides adequate or detailed functional requirements for code generation.
+
+2. **Constraints**  
+   - Must have network connectivity for LLM API calls and Git pushes.  
+   - Must comply with any LLM provider rate limits or usage constraints.
+
+---
+
+## 8. Success Criteria
+
+1. **Functionality**  
+   - The agent can create a project that **fully meets the user’s stated requirements**, including all code and documentation.  
+   - The project architecture adheres to the relevant template.
+
+2. **User Satisfaction**  
+   - Users report a significantly reduced manual effort in setting up new projects (≥ 50% time reduction).
+
+3. **Expandability**  
+   - Additional language templates or advanced features (e.g., Dockerfiles, CI/CD) can be added without substantial system redesign.
+
+4. **Reliability**  
+   - Minimal failures during Git operations, code generation, or template retrieval; any errors are logged and recoverable.
+
+---
+
+## 9. Release Milestones
+
+1. **MVP (v0.1)**  
+   - Basic repository creation and minimal template-based code generation for a single language (e.g., Python).  
+   - Automated `README.md` creation.  
+   - Local commits and push to a specified remote.
+
+2. **Version 0.2**  
+   - Addition of C# code generation capabilities.  
+   - Enhanced error handling and user guidance.  
+   - RAG integration for retrieving standard folder structures from multiple language templates.
+
+3. **Version 1.0**  
+   - Full template compliance, covering multiple languages and more advanced scenarios (e.g., microservices, libraries).  
+   - Documentation expansions, including references to user requirements.  
+   - Optionally generate test stubs, Dockerfiles, or partial CI/CD configurations.
+
+---
+
+## 10. Open Questions
+
+1. **Remote Repository Creation**  
+   - Should the agent also create new remote repositories (e.g., via GitHub API), or only manage local/remote sync?  
+2. **Advanced Linting**  
+   - Do we want an automatic code lint or formatting step included in the generation process?  
+3. **Interactive Clarifications**  
+   - To what extent should the agent prompt the user for additional details (e.g., library versions, project names) if unclear?
+
+---
+
+### Conclusion
+
+With the additional requirement that the agent **autonomously generates all necessary source code and documentation** and enforces 
+compliance with **language-specific project templates**, this updated PRD provides a clear set of objectives. The LLM-Based Git Repository 
+Creation Agent will drastically reduce the manual effort required to spin up new projects, ensuring **both** requirement 
+fulfillment **and** architectural consistency across different languages and teams.

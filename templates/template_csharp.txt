@@ -1,0 +1,189 @@
+# Introduction 
+
+
+# Getting startet
+
+1. Execute the __azure-pipeline-builder.ps1__ script. This script will replace some placeholders in the azure-pipelines.yml file
+2. In order to install the service into a local kubernetes environment you have to execute the __update_dependencies.ps1__ script in the __manifest__ folder.
+3. The .Client project has a nuget PackageReference to the .Interface DLL. To build the Client, you first have to build and push the .Interface project to the blumatix nuget feed!
+4. The .Client.Tests project acts as integration tests for the API and uses the Client herefor. 
+
+# About this **Template**
+
+## Hexagonal Architecture in Clean Code and Clean Architecture
+Hexagonal Architecture, also known as **Ports and Adapters**, is a software design pattern that emphasizes a clean separation between the core business logic (the **Application Core**) and the external systems or frameworks (the **Infrastructure**). It aligns closely with **Clean Code** and **Clean Architecture** principles, where the focus is on creating maintainable, testable, and scalable software.
+
+For further information, please refer to: https://en.wikipedia.org/wiki/Hexagonal_architecture_(software)
+
+Here’s how Hexagonal Architecture principles and Clean Code concepts are applied in the **Blumatix Service Template**.
+
+### Hexagonal Architecture Key Concepts
+1. **Core (Domain Layer)**
+- Responsibilities:
+  - Encapsulates business rules and domain models.
+  - Defines interfaces (ports) for external dependencies.
+  - Does not depend on frameworks, databases, or messaging systems.
+- Clean Code Principle:
+  - Separation of concerns: The domain layer is self-contained and focused solely on business logic.
+  - Dependency Inversion: The core depends only on abstractions (interfaces).
+2. **Application Layer**
+- Responsibilities:
+  - Orchestrates use cases by combining domain logic and external adapters.
+  - Acts as an entry point for external requests (e.g., API calls).
+- Clean Code Principle
+  - Single Responsibility: Services handle one use case at a time (e.g., fetching job states).
+  - High cohesion: Application services are tightly focused on their respective tasks.
+3. **Infrastructure Layer**
+- Responsibilities:
+  - Implements external dependencies (e.g., databases, message brokers, observability).
+  - Adapts external frameworks and tools to the core's interfaces (ports).
+- Clean Code Principle:
+  - Open/Closed Principle: Infrastructure code can be modified without affecting the core.
+  - Low coupling: Infrastructure concerns are isolated from business logic.
+
+### Hexagonal Architecture Applied to Blumatix Service Template
+
+1. **Core Layer**
+The Core layer is the foundation of the application. It includes:
+
+- **Domain Models**: JobState and JobStateHistoryEntry encapsulate the business data.
+- **Ports (Interfaces)**: Define abstractions for dependencies (IJobStateRepository, IJobStateService).
+
+Example: IJobStateRepository
+
+```csharp
+namespace Blumatix.Core.Interfaces;
+
+public interface IJobStateRepository
+{
+    Task<List<JobState>> GetRunningJobsAsync(string customerId);
+    Task<JobState?> GetJobStateAsync(string customerId, string jobId);
+    Task SaveJobStateAsync(JobState jobState);
+    Task<bool> DeleteJobStateAsync(string customerId, string jobId);
+}
+```
+
+**Clean Architecture Alignment:**
+
+- This layer contains no dependencies on frameworks or databases, making it easy to test and reusable in different contexts.
+
+2. **Application Layer**
+The Application layer contains the **primary adapters**. These services orchestrate business logic by using the interfaces (ports) defined in the Core layer.
+
+Example: JobStateService
+
+```csharp
+namespace Blumatix.Application.Services;
+
+public class JobStateService : IJobStateService
+{
+    private readonly IJobStateRepository _jobStateRepository;
+
+    public JobStateService(IJobStateRepository jobStateRepository)
+    {
+        _jobStateRepository = jobStateRepository;
+    }
+
+    public async Task<List<JobStateDto>> GetRunningJobsAsync(string customerId)
+    {
+        var runningJobs = await _jobStateRepository.GetRunningJobsAsync(customerId);
+        return runningJobs.ConvertAll(job => new JobStateDto
+        {
+            JobId = job.JobId,
+            CustomerId = job.CustomerId,
+            CurrentState = job.CurrentState,
+            LastUpdated = job.LastUpdated
+        });
+    }
+}
+```
+
+**Clean Architecture Alignment:**
+
+The application layer doesn’t contain any business logic; instead, it delegates to the core and coordinates interactions with external systems.
+Testable and reusable by mocking the interfaces in unit tests.
+
+3. **Infrastructure Layer**
+The Infrastructure layer implements secondary adapters to connect the application to external systems like databases, message brokers, and monitoring tools.
+
+Example: AzureBlobJobStateRepository
+
+```csharp
+namespace Blumatix.Infrastructure.Persistence;
+
+public class AzureBlobJobStateRepository : IJobStateRepository
+{
+    private readonly BlobContainerClient _containerClient;
+
+    public AzureBlobJobStateRepository(BlobServiceClient blobServiceClient, string containerName)
+    {
+        _containerClient = blobServiceClient.GetBlobContainerClient(containerName);
+    }
+
+    public async Task<List<JobState>> GetRunningJobsAsync(string customerId)
+    {
+        var runningJobs = new List<JobState>();
+        var prefix = $"{customerId}/";
+        await foreach (var blob in _containerClient.GetBlobsAsync(prefix: prefix))
+        {
+            // Retrieve job states from Azure Blob Storage
+        }
+        return runningJobs;
+    }
+}
+```
+
+**Clean Architecture Alignment:**
+
+- Implements interfaces from the core layer, ensuring infrastructure details remain decoupled from the application logic.
+- Replacing Azure Blob Storage with another storage solution (e.g., SQL) would only require changes in this layer.
+
+
+### Applying Clean Code Principles
+
+1. **Single Responsibility**
+Each class has a single responsibility. Here in our example:
+- JobState represents a domain entity.
+- JobStateService orchestrates job-related use cases.
+- AzureBlobJobStateRepository handles persistence.
+1. **Dependency Inversion**
+The application layer depends on the core layer’s abstractions, not on the infrastructure implementations.
+
+1. **High Cohesion, Low Coupling**
+- Business rules are cohesive within the Core layer.
+- Infrastructure components are loosely coupled via interfaces.
+1. **Testability**
+- Core logic can be tested independently of infrastructure.
+- Mock implementations of IJobStateRepository can simulate database behavior for unit tests.
+
+### Benefits of the Applied Architecture
+1. **Flexibility:** The service can easily switch to a different messaging system, storage backend, or observability tool by replacing adapters in the Infrastructure layer.
+2. **Scalability:** Each layer can scale independently without affecting other layers.
+3. **Testability:** Business rules in the Core layer and application services in the Application layer are isolated and straightforward to test.
+4. **Maintainability:** Clear separation of concerns simplifies debugging, feature additions, and modifications.
+
+### Example Visual Representation
+
+```sql
+          +-------------------------+
+          |       Core Layer        |
+          |-------------------------|
+          | Domain Models           |
+          | Business Rules          |
+          | Interfaces (Ports)      |
+          +-------------------------+
+                     ^
+                     |
+         +-----------|-----------+
+         |                       |
++-----------------+   +-----------------------+
+| Application     |   | Infrastructure        |
+|-----------------|   |-----------------------|
+| Services (Use   |   | Persistence (Azure    |
+| Cases)          |   | Blob Storage, SQL)    |
+| Adapters        |   | Messaging (RabbitMQ)  |
+|                 |   | Observability (OTEL)  |
++-----------------+   +-----------------------+
+```
+
+This structure ensures that business rules are at the center, with everything else revolving around and depending on them via interfaces.
